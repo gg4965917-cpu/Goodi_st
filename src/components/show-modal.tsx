@@ -2,15 +2,15 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { env } from "@/env.mjs"
 import { useModalStore } from "@/stores/modal"
 import { useProfileStore } from "@/stores/profile"
-import type { Genre, ShowWithGenreAndVideo } from "@/types"
+import type { Genre } from "@/types"
 import { useIsMutating } from "@tanstack/react-query"
 import { toast } from "react-hot-toast"
 import ReactPlayer from "react-player/lazy"
 
 import { api } from "@/lib/api/api"
+import { jikanFull } from "@/lib/anime/jikan"
 import { cn, getYear } from "@/lib/utils"
 import DynamicTooltip from "@/components/dynamic-tooltip"
 import { Icons } from "@/components/icons"
@@ -41,29 +41,25 @@ const ShowModal = ({ open, setOpen }: ShowModalProps) => {
   const [isPlaying, setIsPlaying] = React.useState(false)
   const [isAdded, setIsAdded] = React.useState(false)
 
-  // get trailer and genres of show
+  // get trailer and genres of show (Jikan)
   React.useEffect(() => {
     const getShow = async () => {
       if (!modalStore.show) return
 
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/${
-            modalStore.show?.media_type === "tv" ? "tv" : "movie"
-          }/${modalStore.show?.id}?api_key=${
-            env.NEXT_PUBLIC_TMDB_API_KEY
-          }&language=en-US&append_to_response=videos`
-        )
-        const data = (await response.json()) as ShowWithGenreAndVideo
-        if (data?.videos) {
-          const trailerIndex = data.videos.results.findIndex(
-            (item) => item.type === "Trailer"
-          )
-          setTrailer(data.videos?.results[trailerIndex]?.key ?? "")
+        const data = await jikanFull(modalStore.show.id)
+        if (!data) {
+          setTrailer("")
+          setGenres([])
+          return
         }
-        if (data?.genres) {
-          setGenres(data.genres)
-        }
+        setTrailer(data.trailer?.youtube_id ?? "")
+        const allGenres = [
+          ...(data.genres ?? []),
+          ...(data.themes ?? []),
+          ...(data.demographics ?? []),
+        ].map((g) => ({ id: g.mal_id, name: g.name }))
+        setGenres(allGenres)
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Something went wrong"

@@ -5,8 +5,8 @@ import { getShows } from "@/lib/fetchers"
 import ShowsContainer from "@/components/shows-container"
 
 export const metadata: Metadata = {
-  title: "TV Shows",
-  description: "All TV shows grouped by genre",
+  title: "TV Series",
+  description: "All anime series grouped by genre",
 }
 
 export default async function TVShowsPage() {
@@ -14,31 +14,35 @@ export default async function TVShowsPage() {
 
   const allShowsByCategory: CategorizedShows[] = [
     {
-      title: "Trending Now",
+      title: "Currently Airing",
       shows: allShows.trending,
     },
     {
-      title: "Top Rated",
+      title: "Top Rated Series",
       shows: allShows.topRated,
     },
     {
-      title: "Action Thrillers",
+      title: "Adventure & Fantasy",
+      shows: allShows.netflix,
+    },
+    {
+      title: "Action",
       shows: allShows.action,
     },
     {
-      title: "Comedies",
+      title: "Comedy",
       shows: allShows.comedy,
     },
     {
-      title: "Scary Movies",
+      title: "Horror",
       shows: allShows.horror,
     },
     {
-      title: "Romance Movies",
+      title: "Romance",
       shows: allShows.romance,
     },
     {
-      title: "Documentaries",
+      title: "Slice of Life",
       shows: allShows.docs,
     },
   ]

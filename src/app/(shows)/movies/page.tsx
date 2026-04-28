@@ -7,7 +7,7 @@ import ShowsContainer from "@/components/shows-container"
 
 export const metadata: Metadata = {
   title: "Movies",
-  description: "All movies grouped by genre",
+  description: "All anime movies grouped by genre",
 }
 
 export default async function MoviesPage() {
@@ -17,31 +17,35 @@ export default async function MoviesPage() {
 
   const allShowsByCategory: CategorizedShows[] = [
     {
-      title: "Trending Now",
+      title: "Popular Anime Movies",
       shows: allShows.trending,
     },
     {
-      title: "Top Rated",
+      title: "Top Rated Movies",
       shows: allShows.topRated,
     },
     {
-      title: "Action Thrillers",
+      title: "Adventure & Fantasy",
+      shows: allShows.netflix,
+    },
+    {
+      title: "Action",
       shows: allShows.action,
     },
     {
-      title: "Comedies",
+      title: "Comedy",
       shows: allShows.comedy,
     },
     {
-      title: "Scary Movies",
+      title: "Horror",
       shows: allShows.horror,
     },
     {
-      title: "Romance Movies",
+      title: "Romance",
       shows: allShows.romance,
     },
     {
-      title: "Documentaries",
+      title: "Slice of Life",
       shows: allShows.docs,
     },
   ]

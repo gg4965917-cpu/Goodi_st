@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useModalStore } from "@/stores/modal"
 import type { Show } from "@/types"
 
+import { showImageUrl } from "@/lib/utils"
 import ShowModal from "@/components/show-modal"
 
 interface SearchedShowsProps {
@@ -27,13 +28,12 @@ const ShowsGrid = ({ shows }: SearchedShowsProps) => {
         {shows.map((show) => (
           <Image
             key={show.id}
-            src={`https://image.tmdb.org/t/p/w500/${
-              show.backdrop_path ?? show.poster_path ?? ""
-            }`}
+            src={showImageUrl(show.backdrop_path, show.poster_path)}
             alt={show.title ?? show.name ?? "poster"}
             width={240}
             height={135}
             priority
+            unoptimized
             className="aspect-video cursor-pointer object-cover transition-all hover:z-20 hover:scale-110"
             onClick={() => {
               modalStore.setShow(show)

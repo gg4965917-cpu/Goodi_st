@@ -6,7 +6,7 @@ import { useModalStore } from "@/stores/modal"
 import { useSearchStore } from "@/stores/search"
 import type { Show } from "@/types"
 
-import { cn } from "@/lib/utils"
+import { cn, showImageUrl } from "@/lib/utils"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 
@@ -42,13 +42,15 @@ const Hero = ({ shows }: HeroProps) => {
               )}
             />
             <Image
-              src={`https://image.tmdb.org/t/p/original/${
-                randomShow?.poster_path ?? randomShow?.backdrop_path ?? ""
-              }`}
-              alt={randomShow?.title ?? "poster"}
+              src={showImageUrl(
+                randomShow?.backdrop_path,
+                randomShow?.poster_path
+              )}
+              alt={randomShow?.title ?? randomShow?.name ?? "poster"}
               className="h-auto w-full object-cover"
               fill
               priority
+              unoptimized
             />
           </div>
           <div className="grid max-w-lg space-y-2 pt-24 ">
@@ -59,7 +61,9 @@ const Hero = ({ shows }: HeroProps) => {
               <p className="text-green-600">
                 {randomShow?.vote_average * 10 ?? "-"}% Match
               </p>
-              <p className="text-gray-300">{randomShow?.release_date ?? "-"}</p>
+              <p className="text-gray-300">
+                {randomShow?.release_date ?? randomShow?.first_air_date ?? "-"}
+              </p>
             </div>
             <p className="line-clamp-4 text-sm text-gray-300 md:text-base">
               {randomShow?.overview ?? "-"}
