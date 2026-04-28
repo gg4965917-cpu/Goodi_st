@@ -6,7 +6,7 @@ import ShowsContainer from "@/components/shows-container"
 
 export const metadata: Metadata = {
   title: "New & Popular",
-  description: "All new and popular shows grouped by genre",
+  description: "New and popular anime grouped by category",
 }
 
 export default async function NewAndPopularPage() {
@@ -14,15 +14,15 @@ export default async function NewAndPopularPage() {
 
   const allShowsByCategory: CategorizedShows[] = [
     {
-      title: "New TV Shows",
+      title: "This Season",
       shows: allShows.trendingTvs,
     },
     {
-      title: "New Movies",
+      title: "Coming Soon",
       shows: allShows.trendingMovies,
     },
     {
-      title: "Popular TV Shows",
+      title: "Popular Series",
       shows: allShows.popularTvs,
     },
     {

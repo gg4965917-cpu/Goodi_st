@@ -10,7 +10,17 @@ const config = {
   images: {
     // image optimization is disabled because of exceeding the vercel hobby tier limit
     unoptimized: true,
-    domains: ["image.tmdb.org", "res.cloudinary.com"],
+    domains: [
+      "image.tmdb.org",
+      "res.cloudinary.com",
+      "cdn.myanimelist.net",
+      "myanimelist.net",
+      "api-cdn.myanimelist.net",
+      "s4.anilist.co",
+      "cdn.anilist.co",
+      "img.youtube.com",
+      "i.ytimg.com",
+    ],
   },
 
   /**

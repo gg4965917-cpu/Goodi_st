@@ -1,142 +1,131 @@
-import { env } from "@/env.mjs"
 import type { Show } from "@/types"
 import type { MEDIA_TYPE } from "@prisma/client"
 
+import { anilistByMalIds } from "@/lib/anime/anilist"
+import {
+  dedupeByMalId,
+  jikanByGenre,
+  jikanSearch,
+  jikanSeason,
+  jikanToShow,
+  jikanTopAnime,
+  type JikanAnime,
+} from "@/lib/anime/jikan"
+
+// MAL genre IDs
+const GENRE_ACTION = 1
+const GENRE_ADVENTURE = 2
+const GENRE_COMEDY = 4
+const GENRE_DRAMA = 8
+const GENRE_FANTASY = 10
+const GENRE_HORROR = 14
+const GENRE_MYSTERY = 7
+const GENRE_ROMANCE = 22
+const GENRE_SCIFI = 24
+const GENRE_SLICE_OF_LIFE = 36
+const GENRE_SUPERNATURAL = 37
+
+async function enrichShows(jikan: JikanAnime[]): Promise<Show[]> {
+  if (jikan.length === 0) return []
+  const malIds = jikan.map((a) => a.mal_id)
+  const banners = await anilistByMalIds(malIds)
+  return jikan.map((a) => {
+    const show = jikanToShow(a)
+    const al = banners.get(a.mal_id)
+    if (al?.bannerImage) {
+      show.backdrop_path = al.bannerImage
+    }
+    return show
+  })
+}
+
 export async function getShows(mediaType: MEDIA_TYPE) {
+  const jikanType = mediaType === "movie" ? "movie" : "tv"
+
   const [
-    trendingRes,
-    topRatedRes,
-    netflixRes,
-    actionRes,
-    comedyRes,
-    horrorRes,
-    romanceRes,
-    docRes,
+    trending,
+    topRated,
+    netflix,
+    action,
+    comedy,
+    horror,
+    romance,
+    docs,
   ] = await Promise.all([
-    fetch(
-      `https://api.themoviedb.org/3/trending/${mediaType}/week?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/${mediaType}/top_rated?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&with_networks=213`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=28`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=35`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=27`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=10749`
-    ),
-    fetch(
-      `https://api.themoviedb.org/3/discover/${mediaType}?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&with_genres=99`
-    ),
+    mediaType === "tv"
+      ? jikanTopAnime("tv", "airing", 20)
+      : jikanTopAnime("movie", "bypopularity", 20),
+    jikanTopAnime(jikanType, undefined, 20),
+    jikanByGenre(jikanType, [GENRE_ADVENTURE, GENRE_FANTASY], 20),
+    jikanByGenre(jikanType, [GENRE_ACTION], 20),
+    jikanByGenre(jikanType, [GENRE_COMEDY], 20),
+    jikanByGenre(jikanType, [GENRE_HORROR], 20),
+    jikanByGenre(jikanType, [GENRE_ROMANCE], 20),
+    jikanByGenre(jikanType, [GENRE_SLICE_OF_LIFE], 20),
   ])
 
-  if (
-    !trendingRes.ok ||
-    !topRatedRes.ok ||
-    !netflixRes.ok ||
-    !actionRes.ok ||
-    !comedyRes.ok ||
-    !horrorRes.ok ||
-    !romanceRes.ok ||
-    !docRes.ok
-  ) {
-    throw new Error("Failed to fetch shows")
-  }
-
-  const [trending, topRated, netflix, action, comedy, horror, romance, docs] =
-    (await Promise.all([
-      trendingRes.json(),
-      topRatedRes.json(),
-      netflixRes.json(),
-      actionRes.json(),
-      comedyRes.json(),
-      horrorRes.json(),
-      romanceRes.json(),
-      docRes.json(),
-    ])) as { results: Show[] }[]
+  const allJikan = [
+    ...trending,
+    ...topRated,
+    ...netflix,
+    ...action,
+    ...comedy,
+    ...horror,
+    ...romance,
+    ...docs,
+  ]
+  const enrichedMap = new Map(
+    (await enrichShows(dedupeByMalId(allJikan))).map((s) => [s.id, s])
+  )
+  const toShows = (arr: JikanAnime[]): Show[] =>
+    arr.map((a) => enrichedMap.get(a.mal_id) ?? jikanToShow(a))
 
   return {
-    trending: trending?.results,
-    topRated: topRated?.results,
-    netflix: netflix?.results,
-    action: action?.results,
-    comedy: comedy?.results,
-    horror: horror?.results,
-    romance: romance?.results,
-    docs: docs?.results,
+    trending: toShows(trending),
+    topRated: toShows(topRated),
+    netflix: toShows(netflix),
+    action: toShows(action),
+    comedy: toShows(comedy),
+    horror: toShows(horror),
+    romance: toShows(romance),
+    docs: toShows(docs),
   }
 }
 
-// The latest endpiont doesn't seem to work.
-// API endpoint url: https://api.themoviedb.org/3/movie/latest?api_key=<<api_key>>&language=en-US.
-// So taking trending for the day as new shows.
 export async function getNewAndPopularShows() {
-  const [popularTvRes, popularMovieRes, trendingTvRes, trendingMovieRes] =
+  const [seasonNowTv, seasonUpcomingTv, popularTv, popularMovie] =
     await Promise.all([
-      fetch(
-        `https://api.themoviedb.org/3/tv/popular?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-      ),
-      fetch(
-        `https://api.themoviedb.org/3/movie/popular?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-      ),
-      fetch(
-        `https://api.themoviedb.org/3/trending/tv/day?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-      ),
-      fetch(
-        `https://api.themoviedb.org/3/trending/movie/day?api_key=${env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-      ),
+      jikanSeason("now", "tv", 20),
+      jikanSeason("upcoming", "tv", 20),
+      jikanTopAnime("tv", "bypopularity", 20),
+      jikanTopAnime("movie", "bypopularity", 20),
     ])
 
-  if (
-    !popularTvRes.ok ||
-    !popularMovieRes.ok ||
-    !trendingTvRes.ok ||
-    !trendingMovieRes.ok
-  ) {
-    throw new Error("Failed to fetch shows")
-  }
-
-  const [popularTvs, popularMovies, trendingTvs, trendingMovies] =
-    (await Promise.all([
-      popularTvRes.json(),
-      popularMovieRes.json(),
-      trendingTvRes.json(),
-      trendingMovieRes.json(),
-    ])) as { results: Show[] }[]
+  const allJikan = [
+    ...seasonNowTv,
+    ...seasonUpcomingTv,
+    ...popularTv,
+    ...popularMovie,
+  ]
+  const enrichedMap = new Map(
+    (await enrichShows(dedupeByMalId(allJikan))).map((s) => [s.id, s])
+  )
+  const toShows = (arr: JikanAnime[]): Show[] =>
+    arr.map((a) => enrichedMap.get(a.mal_id) ?? jikanToShow(a))
 
   return {
-    popularTvs: popularTvs?.results,
-    popularMovies: popularMovies?.results,
-    trendingTvs: trendingTvs?.results,
-    trendingMovies: trendingMovies?.results,
+    trendingTvs: toShows(seasonNowTv),
+    trendingMovies: toShows(seasonUpcomingTv),
+    popularTvs: toShows(popularTv),
+    popularMovies: toShows(popularMovie),
   }
 }
 
 export async function searchShows(query: string) {
-  const res = await fetch(
-    `https://api.themoviedb.org/3/search/multi?api_key=${
-      env.NEXT_PUBLIC_TMDB_API_KEY
-    }&query=${encodeURIComponent(query)}`
-  )
-
-  if (!res.ok) {
-    throw new Error("Failed to find shows")
-  }
-
-  const shows = (await res.json()) as { results: Show[] }
-
-  const popularShows = shows.results.sort((a, b) => b.popularity - a.popularity)
-
-  return {
-    results: popularShows,
-  }
+  const items = await jikanSearch(query, 20)
+  const enriched = await enrichShows(items)
+  return { results: enriched }
 }
+
+// Re-exported for ad-hoc imports if any callers still reference internals.
+export { GENRE_ACTION, GENRE_ADVENTURE, GENRE_COMEDY, GENRE_DRAMA, GENRE_FANTASY, GENRE_HORROR, GENRE_MYSTERY, GENRE_ROMANCE, GENRE_SCIFI, GENRE_SLICE_OF_LIFE, GENRE_SUPERNATURAL }

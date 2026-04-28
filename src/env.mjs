@@ -36,7 +36,6 @@ const server = z.object({
  */
 const client = z.object({
   NEXT_PUBLIC_APP_URL: z.string().min(1).optional(),
-  NEXT_PUBLIC_TMDB_API_KEY: z.string().min(1),
 });
 
 /**
@@ -59,7 +58,6 @@ const processEnv = {
   STRIPE_STANDARD_PRICE_ID: process.env.STRIPE_STANDARD_PRICE_ID,
   STRIPE_PREMIUM_PRICE_ID: process.env.STRIPE_PREMIUM_PRICE_ID,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_TMDB_API_KEY: process.env.NEXT_PUBLIC_TMDB_API_KEY,
 };
 
 // Don't touch the part below
