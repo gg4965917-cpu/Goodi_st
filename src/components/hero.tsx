@@ -61,7 +61,9 @@ const Hero = ({ shows }: HeroProps) => {
               <p className="text-green-600">
                 {randomShow?.vote_average * 10 ?? "-"}% Match
               </p>
-              <p className="text-gray-300">{randomShow?.release_date ?? "-"}</p>
+              <p className="text-gray-300">
+                {randomShow?.release_date ?? randomShow?.first_air_date ?? "-"}
+              </p>
             </div>
             <p className="line-clamp-4 text-sm text-gray-300 md:text-base">
               {randomShow?.overview ?? "-"}
